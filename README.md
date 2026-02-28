@@ -114,3 +114,7 @@ Recommended Actions:
 
 ## TODO / Future Work
 - **LangGraph Integration:** Explore integrating an agentic workflow framework (like LangGraph via Python sidecar, or LangChain4j for a Java-native approach) to support multi-agent diagnostic RAG cycles and automated remediation execution.
+
+## Credits
+
+This project was proudly **"vibe-coded"**—a seamless collaboration between human intuition and Artificial Intelligence. 🚀🤖
