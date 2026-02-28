@@ -65,3 +65,6 @@ You can run the CLI via the Gradle `run` task:
 - `dev.jvmai.analysis`: Deterministic Rule Engine containing rules and severity logic.
 - `dev.jvmai.format`: Handles JSON, Text, and Markdown output generation.
 - `dev.jvmai.llm`: LLM HTTP Client and Security data redactor.
+
+## TODO / Future Work
+- **LangGraph Integration:** Explore integrating an agentic workflow framework (like LangGraph via Python sidecar, or LangChain4j for a Java-native approach) to support multi-agent diagnostic RAG cycles and automated remediation execution.
