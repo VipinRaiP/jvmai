@@ -1,0 +1,49 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+group = 'dev.jvmai'
+version = '1.0.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // CLI framework
+    implementation 'info.picocli:picocli:4.7.5'
+    annotationProcessor 'info.picocli:picocli-codegen:4.7.5'
+
+    // JSON handling
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.16.1'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.16.1'
+
+    // Logging
+    implementation 'ch.qos.logback:logback-classic:1.4.14'
+
+    // Testing
+    testImplementation platform('org.junit:junit-bom:5.10.1')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testImplementation 'org.mockito:mockito-core:5.10.0'
+    testImplementation 'org.mockito:mockito-junit-jupiter:5.10.0'
+}
+
+application {
+    mainClass = 'dev.jvmai.JvmaiCli'
+}
+
+test {
+    useJUnitPlatform()
+}
+
+// Ensure picocli annotation processor works
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ["-Aproject=${project.group}/${project.name}"]
+}
