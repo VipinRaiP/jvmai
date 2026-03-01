@@ -12,7 +12,7 @@ JVMAI is a CLI-first AI-assisted JVM diagnostic tool built with Java 21, Picocli
   - High Thread Contention
   - High Heap Memory Usage
   - Garbage Collection Thrashing
-- **LLM Reasoning (Optional):** Sends securely redacted diagnostics to a local LLM to get a root cause analysis and actionable recommendations.
+- **LangGraph Multi-Agent Reasoning (Optional):** Sends securely redacted diagnostics through a `langgraph4j` `StateGraph` powered by local LLMs via Ollama. It utilizes specialized "Thread" and "Memory" Agents that analyze specific metrics, and a "Synthesis" Lead Agent that outputs a cohesive root cause analysis and actionable recommendations.
 - **Interactive Q&A:** Chat directly with the LLM about the collected JVM state to dive deeper into specific issues.
 - **Multiple Output Formats:** View reports as plain text, Markdown, or structured JSON.
 
@@ -20,7 +20,7 @@ JVMAI is a CLI-first AI-assisted JVM diagnostic tool built with Java 21, Picocli
 
 - **Java 21** or higher.
 - **Ollama** installed and running locally on `http://localhost:11434` (if you plan to use the LLM features).
-  - You will need to pull a model, e.g., `ollama pull llama3`.
+  - You will need to pull a model, e.g., `ollama pull llama3.2`.
 
 ## Build Instructions
 
@@ -44,6 +44,9 @@ You can run the CLI via the Gradle `run` task:
 # Output as Markdown and redact sensitive string values 
 ./gradlew run --args="diagnose --pid <TARGET_PID> --output markdown --redact"
 
+# Test against a specific model
+./gradlew run --args="diagnose --pid <TARGET_PID> --model llama3.2"
+
 # Enter Interactive Q&A loop after generating the report
 ./gradlew run --args="diagnose --pid <TARGET_PID> --interactive"
 ```
@@ -55,7 +58,7 @@ You can run the CLI via the Gradle `run` task:
 | `-p`, `--pid` | **(Required)** Target JVM Process ID. | - |
 | `--model` | LLM model name to interact with via local Ollama. | `llama3` |
 | `--output` | Format of the generated report (`text`, `markdown`, or `json`). | `text` |
-| `--no-llm` | Disables the LLM reasoning layer. Only the Rule Engine results are shown. | `false` |
+| `--no-llm` | Disables the LangGraph AI reasoning layer. Only the static Rule Engine results are shown. | `false` |
 | `--interactive` | Keeps the CLI open after the initial report, allowing you to ask follow-up questions to the LLM. | `false` |
 | `--redact` | Attempts to scrub obvious secrets, IP addresses, and UUIDs from thread/lock names before sending data to the LLM. | `false` |
 | `--timeout` | Connection timeout (in seconds) for the HTTP request to the local LLM. | `30` |
@@ -69,13 +72,15 @@ Attaching to JVM with PID: 1234...
 Successfully attached to JVM. Collecting diagnostics...
 Diagnostics collected for JVM: OpenJDK 64-Bit Server VM (21.0.1+12-29)
 
-Running diagnostic rules...
-[CRITICAL] High Heap Usage: Heap usage is at 89.1%, exceeding threshold of 85.0%.
-[OK] Deadlock Detection: No deadlocked threads found.
-[OK] High Thread Count: Thread count is normal (142).
-[WARNING] GC Overhead Warning: 14.2% of JVM uptime has been spent in Garbage Collection.
-
-Analyzing with LLM (llama3)...
+Initializing Multi-Agent AI System via LangGraph4j (llama3.2)...
+Starting Multi-Agent Diagnostic Graph (powered by LangGraph4j)...
+  [Agent:Thread] Analyzing thread dump...
+  [Agent:Thread] Complete.
+  [Agent:Memory] Analyzing heap and GC usage...
+  [Agent:Memory] Complete.
+  [Agent:Synthesis] Synthesizing reports into Root Cause Analysis...
+  [Agent:Synthesis] Complete.
+Multi-Agent Graph Complete.
 
 === JVMAI Diagnostic Report ===
 
@@ -96,24 +101,31 @@ Rule Analysis:
   [⚠️] GC Overhead Warning: 14.2% of JVM uptime has been spent in Garbage Collection.
 
 AI Reasoning & Recommendations:
-Based on the diagnostics, the JVM is experiencing significant memory pressure. The High Heap Usage (89.1%) correlates directly with the GC Overhead Warning (14.2% of uptime spent in GC). 
-
-Root Cause: The application is likely retaining objects too long, preventing the G1 collector from reclaiming sufficient space, or the `-Xmx` limit is simply configured too low for the current load.
-
-Recommended Actions:
-1. Capture a heap dump (`jcmd 1234 GC.heap_dump /tmp/heap.hprof`) to identify memory leaks.
-2. Consider increasing the maximum heap size via `-Xmx`.
-3. Check application logs for frequent allocation patterns.
+{
+  "rootCauseAnalysis": {
+    "description": "The JVM is encountering frequent Garbage Collection cycles without reclaiming sufficient heap space, causing severe memory pressure.",
+    "confidenceLevel": 92,
+    "severity": "High"
+  },
+  "recommendedActions": [
+    {
+      "action": "Capture a heap dump to identify memory leaks.",
+      "probability": 90
+    },
+    {
+      "action": "Evaluate increasing the -Xmx parameter.",
+      "probability": 85
+    }
+  ]
+}
 ```
 
 ## Project Structure
 - `dev.jvmai.diagnostic`: Contains the JVM logic to attach to the target process and extract metrics.
 - `dev.jvmai.analysis`: Deterministic Rule Engine containing rules and severity logic.
 - `dev.jvmai.format`: Handles JSON, Text, and Markdown output generation.
-- `dev.jvmai.llm`: LLM HTTP Client and Security data redactor.
-
-## TODO / Future Work
-- **LangGraph Integration:** Explore integrating an agentic workflow framework (like LangGraph via Python sidecar, or LangChain4j for a Java-native approach) to support multi-agent diagnostic RAG cycles and automated remediation execution.
+- `dev.jvmai.llm`: `langchain4j-ollama` HTTP Client and Security data redactor.
+- `dev.jvmai.llm.graph`: Multi-Agent `langgraph4j` nodes (Thread, Memory, Synthesis) and `StateGraph` execution.
 
 ## Credits
 
