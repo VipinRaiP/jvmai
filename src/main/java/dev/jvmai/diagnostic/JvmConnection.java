@@ -19,11 +19,19 @@ public class JvmConnection implements AutoCloseable {
             this.vm = VirtualMachine.attach(String.valueOf(pid));
             String connectorAddress = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
             if (connectorAddress == null) {
+                // Try modern startLocalManagementAgent first (Java 8+)
+                vm.startLocalManagementAgent();
+                connectorAddress = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
+            }
+            
+            if (connectorAddress == null) {
+                // Fallback to legacy manual agent loading path if still null
                 String javaHome = vm.getSystemProperties().getProperty("java.home");
                 String agent = javaHome + File.separator + "lib" + File.separator + "management-agent.jar";
                 vm.loadAgent(agent);
                 connectorAddress = vm.getAgentProperties().getProperty("com.sun.management.jmxremote.localConnectorAddress");
             }
+            
             if (connectorAddress == null) {
                 throw new JvmAttachException("Failed to get local JMX connector address");
             }
