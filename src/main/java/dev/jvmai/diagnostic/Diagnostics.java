@@ -7,7 +7,7 @@ public record Diagnostics(
         JvmMetadata metadata,
         ThreadDiagnostics threads,
         MemoryDiagnostics memory
-) {
+) implements java.io.Serializable {
 
     public record JvmMetadata(
             String version,
@@ -15,7 +15,7 @@ public record Diagnostics(
             String name,
             long uptimeMillis,
             String gcAlgorithm
-    ) {}
+    ) implements java.io.Serializable {}
 
     public record ThreadDiagnostics(
             int threadCount,
@@ -27,7 +27,7 @@ public record Diagnostics(
             long[] deadlockedThreadIds,
             List<ThreadInfoData> sampleThreads 
             // sample of active threads to limit data size
-    ) {}
+    ) implements java.io.Serializable {}
 
     public record ThreadInfoData(
             long threadId,
@@ -37,7 +37,7 @@ public record Diagnostics(
             long lockOwnerId,
             boolean isSuspended,
             boolean isInNative
-    ) {}
+    ) implements java.io.Serializable {}
 
     public record MemoryDiagnostics(
             long heapUsed,
@@ -48,11 +48,11 @@ public record Diagnostics(
             long nonHeapCommitted,
             long nonHeapMax,
             List<GarbageCollectorStats> gcStats
-    ) {}
+    ) implements java.io.Serializable {}
 
     public record GarbageCollectorStats(
             String name,
             long collectionCount,
             long collectionTimeMillis
-    ) {}
+    ) implements java.io.Serializable {}
 }

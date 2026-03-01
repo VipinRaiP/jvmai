@@ -48,27 +48,30 @@ public class DiagnoseCommand implements Callable<Integer> {
             return 1;
         }
 
-        dev.jvmai.analysis.RuleEngine engine = new dev.jvmai.analysis.RuleEngine();
-        java.util.List<dev.jvmai.analysis.RuleResult> ruleResults = engine.evaluateAll(diagnostics);
-
+        java.util.List<dev.jvmai.analysis.RuleResult> ruleResults = new java.util.ArrayList<>();
         String llmReasoning = null;
         dev.jvmai.llm.LlmService llmService = null;
+
         if (noLlm) {
-            // No reasoning requested
+            System.out.println("Running static diagnostic rules...");
+            dev.jvmai.analysis.RuleEngine ruleEngine = new dev.jvmai.analysis.RuleEngine();
+            ruleResults = ruleEngine.evaluateAll(diagnostics);
         } else {
-            System.out.println("Analyzing with LLM (" + model + ")...");
+            System.out.println("\nInitializing Multi-Agent AI System via LangGraph4j (" + model + ")...");
             llmService = new dev.jvmai.llm.LlmService(model, timeout);
+            
             Diagnostics payloadDiags = diagnostics;
             if (redact) {
                 payloadDiags = new dev.jvmai.llm.SecurityRedactor().redact(diagnostics);
             }
+
             try {
-                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper()
-                    .registerModule(new com.fasterxml.jackson.datatype.jsr310.JavaTimeModule());
-                String jsonDiags = mapper.writeValueAsString(payloadDiags);
-                llmReasoning = llmService.analyze(jsonDiags);
+                dev.jvmai.llm.graph.GraphRunner graphRunner = new dev.jvmai.llm.graph.GraphRunner(llmService);
+                dev.jvmai.llm.graph.JvmaiState finalState = graphRunner.run(payloadDiags);
+                llmReasoning = finalState.finalReasoning();
             } catch (Exception e) {
-                System.err.println("Warning: LLM analysis failed: " + e.getMessage());
+                System.err.println("Warning: LangGraph4j execution failed: " + e.getMessage());
+                e.printStackTrace();
             }
         }
 
