@@ -30,6 +30,27 @@ To build the application and generate the distribution package, use the provided
 ./gradlew build
 ```
 
+## Remote JVM Debugging
+
+To connect JVMAI to a remote JVM, you must first ensure that the target JVM is started with JMX remote management enabled. 
+
+Here is an example of the JVM arguments required to expose JMX on port `9010` without SSL or authentication (for internal/testing use):
+
+```bash
+java -Dcom.sun.management.jmxremote \
+     -Dcom.sun.management.jmxremote.port=9010 \
+     -Dcom.sun.management.jmxremote.local.only=false \
+     -Dcom.sun.management.jmxremote.authenticate=false \
+     -Dcom.sun.management.jmxremote.ssl=false \
+     -jar your-application.jar
+```
+
+Once the target JVM is running with JMX exposed, you can connect JVMAI to it using the `--host` and `--port` arguments:
+
+```bash
+./gradlew run --args="diagnose --host <REMOTE_HOST> --port 9010"
+```
+
 ## Usage
 
 You can run the CLI via the Gradle `run` task:
