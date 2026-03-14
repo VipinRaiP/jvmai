@@ -38,6 +38,9 @@ You can run the CLI via the Gradle `run` task:
 # Basic diagnosis with default local LLM (llama3) and text output
 ./gradlew run --args="diagnose --pid <TARGET_PID>"
 
+# Diagnosis by connecting to a remote JVM via JMX
+./gradlew run --args="diagnose --host <REMOTE_HOST> --port <JMX_PORT>"
+
 # Disable the LLM completely, rely only on the deterministic Rule Engine
 ./gradlew run --args="diagnose --pid <TARGET_PID> --no-llm"
 
@@ -55,7 +58,9 @@ You can run the CLI via the Gradle `run` task:
 
 | Flag | Description | Default |
 |---|---|---|
-| `-p`, `--pid` | **(Required)** Target JVM Process ID. | - |
+| `-p`, `--pid` | Target JVM Process ID (Required for local attachment). | - |
+| `--host` | Target JVM Hostname (Required for remote JMX attachment). | - |
+| `--port` | Target JVM JMX Port (Required for remote JMX attachment). | - |
 | `--model` | LLM model name to interact with via local Ollama. | `llama3` |
 | `--output` | Format of the generated report (`text`, `markdown`, or `json`). | `text` |
 | `--no-llm` | Disables the LangGraph AI reasoning layer. Only the static Rule Engine results are shown. | `false` |

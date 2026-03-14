@@ -45,6 +45,18 @@ public class JvmConnection implements AutoCloseable {
         }
     }
 
+    public JvmConnection(String host, int port) {
+        try {
+            this.vm = null; // Remote connection doesn't use local attach API
+            String urlString = String.format("service:jmx:rmi:///jndi/rmi://%s:%d/jmxrmi", host, port);
+            JMXServiceURL url = new JMXServiceURL(urlString);
+            this.connector = JMXConnectorFactory.connect(url);
+            this.serverConnection = connector.getMBeanServerConnection();
+        } catch (Exception e) {
+            throw new JvmAttachException("Failed to connect to remote JVM at " + host + ":" + port, e);
+        }
+    }
+
     public MBeanServerConnection getConnection() {
         return serverConnection;
     }

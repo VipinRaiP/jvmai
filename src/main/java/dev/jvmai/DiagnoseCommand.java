@@ -11,8 +11,14 @@ import java.util.concurrent.Callable;
 @Command(name = "diagnose", description = "Attaches to a JVM process and collects diagnostics.")
 public class DiagnoseCommand implements Callable<Integer> {
 
-    @Option(names = {"-p", "--pid"}, required = true, description = "Target JVM Process ID")
-    private long pid;
+    @Option(names = {"-p", "--pid"}, description = "Target JVM Process ID (local attachment)")
+    private Long pid;
+    
+    @Option(names = {"--host"}, description = "Target JVM Hostname (remote JMX attachment)")
+    private String host;
+
+    @Option(names = {"--port"}, description = "Target JVM JMX Port (remote JMX attachment)")
+    private Integer port;
 
     @Option(names = {"--no-llm"}, description = "Disable LLM reasoning")
     private boolean noLlm;
@@ -34,14 +40,37 @@ public class DiagnoseCommand implements Callable<Integer> {
 
     @Override
     public Integer call() throws Exception {
-        System.out.println("Attaching to JVM with PID: " + pid + "...");
-        
+        boolean usePid = pid != null;
+        boolean useRemote = host != null && port != null;
+
+        if (usePid && useRemote) {
+            System.err.println("Error: Cannot specify both local PID and remote Host/Port. Please use either --pid OR --host and --port.");
+            return 1;
+        } else if (!usePid && !useRemote) {
+            System.err.println("Error: Must specify either a local JVM PID (--pid) or a remote JVM connection (--host AND --port).");
+            return 1;
+        } else if (host != null && port == null || host == null && port != null) {
+            System.err.println("Error: Both --host and --port must be provided for remote connections.");
+            return 1;
+        }
+
         Diagnostics diagnostics;
-        try (JvmConnection connection = new JvmConnection(pid)) {
-            System.out.println("Successfully attached to JVM. Collecting diagnostics...");
-            DiagnosticCollector collector = new DiagnosticCollector(connection.getConnection());
-            diagnostics = collector.collect();
-            System.out.println("Diagnostics collected for JVM: " + diagnostics.metadata().name() + " (" + diagnostics.metadata().version() + ")");
+        try {
+            JvmConnection connection;
+            if (usePid) {
+                 System.out.println("Attaching to local JVM with PID: " + pid + "...");
+                 connection = new JvmConnection(pid);
+            } else {
+                 System.out.println("Connecting to remote JVM at " + host + ":" + port + "...");
+                 connection = new JvmConnection(host, port);
+            }
+            
+            try (connection) {
+                System.out.println("Successfully connected to JVM. Collecting diagnostics...");
+                DiagnosticCollector collector = new DiagnosticCollector(connection.getConnection());
+                diagnostics = collector.collect();
+                System.out.println("Diagnostics collected for JVM: " + diagnostics.metadata().name() + " (" + diagnostics.metadata().version() + ")");
+            }
         } catch (Exception e) {
             System.err.println("Failed to attach to or collect from JVM: " + e.getMessage());
             e.printStackTrace();
